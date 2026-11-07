@@ -1,0 +1,48 @@
+# Virtual environment
+.venv/
+
+# JetBrains tools
+.idea/
+.junie/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Python egg / test caches
+*.egg-info/
+wf_cruise_echogram.egg-info
+wf_cruise_ctd.egg-info
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local settings and secrets
+.env
+*.env
+
+# Generated output
+processed/
+logs/
+
+# Raw instrument data is large; keep it out of git (GitHub rejects files over 100 MB)
+cruises/*/raw/
+*.raw
+*.idx
+*.bot
+
+# Built data products, wherever they end up
+*.duckdb
+*.duckdb.wal
+*.zarr/
+*.nc
+*.parquet
+*.log
+
+# Files set aside for manual deletion
+_to_delete/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

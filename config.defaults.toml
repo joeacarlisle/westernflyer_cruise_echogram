@@ -1,0 +1,101 @@
+# Western Flyer EK80 echogram - DEFAULT processing configuration
+# Used when a cruise has no config.toml of its own, and for any key a cruise config.toml leaves out.
+# A key set in cruises/<cruise_id>/config.toml always wins.  Values here were tuned on one 38/200 kHz
+# recording (Baja 2025); check the seabed line and noise removal on every new data set.
+# Section names are for readability only; every key must be unique across sections.
+
+[metadata]
+# Informational only - not read by the pipeline
+SONAR = "unspecified (defaults)"
+
+[environment]
+# Deliberately empty: with no values here, the temperature, salinity, pressure and sound speed stored in
+# each .raw file are used.  Those are whatever was typed into the EK80 software (factory defaults are
+# 10 C, 35 PSU, 100 m), so set measured values in the cruise's own config.toml for results you report.
+# TEMPERATURE_C, SALINITY_PSU, PRESSURE_DBAR, SOUND_SPEED_MS
+
+[calibration]
+# Optional EK80 calibration (.ecs) file from a calibration-sphere run.  Without
+# it, the factory gain, equivalent beam angle and sa-correction in the .raw
+# file are used.
+# ECS_FILE = "cruises/<cruise_id>/calibration.ecs"
+
+[platform]
+# Depth of the transducer face below the sea surface (m).  Added to range to get depth.
+TRANSDUCER_DEPTH_M = 0.0
+
+[processing]
+# Samples closer than this to the transducer (transmit pulse and near field) are removed.
+NEAR_FIELD_EXCLUSION_M = 3.0
+
+# Background-noise removal (De Robertis & Higginbottom 2007): the noise level is
+# estimated from the quietest part of a BN_PING_NUM-ping by BN_RANGE_M-metre block.
+BACKGROUND_NOISE = true
+BN_PING_NUM      = 20
+BN_RANGE_M       = 5.0
+SNR_THRESHOLD_DB = 3.0       # samples closer to the noise than this are removed
+
+# Impulse-noise mask (Ryan et al. 2015): spikes that differ from the pings either side.
+IMPULSE_NOISE        = true
+IMPULSE_DEPTH_BIN_M  = 5.0
+IMPULSE_SIDE_PINGS   = 2
+IMPULSE_THRESHOLD_DB = 10.0
+
+# Seabed detection: first sample deeper than SEABED_MIN_RANGE_M whose Sv exceeds
+# SEABED_THRESHOLD_DB on the SEABED_CHANNEL_KHZ channel; everything below the
+# detected line (less SEABED_MASK_MARGIN_M) is masked on every channel.
+# SEABED_CHANNEL_KHZ not set: each file uses its lowest-frequency channel (best seabed echo).
+SEABED_MIN_RANGE_M   = 5.0
+SEABED_THRESHOLD_DB  = -40.0
+SEABED_OFFSET_M      = 0.5
+SEABED_MASK_MARGIN_M = 1.0
+
+# Optional transient-noise mask: short bursts that are much stronger than the pings either side.
+TRANSIENT_NOISE           = false
+TRANSIENT_DEPTH_BIN_M     = 5.0
+TRANSIENT_SIDE_PINGS      = 25
+TRANSIENT_EXCLUDE_ABOVE_M = 10.0
+TRANSIENT_THRESHOLD_DB    = 12.0
+
+# Bad data: pings inside any [start, end] pair (UTC) are blanked on every channel and dropped from
+# targets and results (off-transect pings, interference, ship manoeuvres).  Example:
+# EXCLUDE_TIME_RANGES_UTC = [["2025-04-16T19:13:00", "2025-04-16T19:13:05"]]
+EXCLUDE_TIME_RANGES_UTC = []
+
+[targets]
+# Single-target detection on target strength (TS): isolated echoes from individual animals.  A target
+# needs a TS peak above TARGET_TS_MIN_DB, at least TARGET_SNR_MIN_DB above the background noise, an
+# echo length (6 dB below the peak) of TARGET_MIN_LENGTH to TARGET_MAX_LENGTH pulse lengths, and, on
+# split-beam channels (38 kHz here), a beam-pattern correction of at most TARGET_MAX_BEAM_COMP_DB.
+# Targets shallower than TARGET_MIN_DEPTH_M or within TARGET_SEABED_MARGIN_M of the seabed are ignored.
+TARGET_DETECTION         = true
+TARGET_TS_MIN_DB         = -60.0
+TARGET_SNR_MIN_DB        = 10.0
+TARGET_MIN_LENGTH        = 0.8
+TARGET_MAX_LENGTH        = 1.8
+TARGET_MAX_BEAM_COMP_DB  = 6.0
+# A peak must also stand this far above the average TS of the samples around it (within the window,
+# not counting the target's own pulse).  Noise speckle almost never does, so this keeps noise out; 12 dB lets a few noise peaks through
+# near the seabed, 15 dB gave none in the noise-only part of the Baja recording.
+TARGET_BACKGROUND_WINDOW_M      = 5.0
+TARGET_PEAK_OVER_BACKGROUND_DB  = 15.0
+TARGET_MIN_DEPTH_M       = 5.0
+TARGET_SEABED_MARGIN_M   = 2.0
+
+[schools]
+# School / scattering-layer detection: connected areas of the block-averaged cleaned Sv above
+# SCHOOL_THRESHOLD_DB that are at least SCHOOL_MIN_THICKNESS_M thick and SCHOOL_MIN_LENGTH_S long.
+# Run on the frequencies listed (200 kHz is mostly noise below about 10 m in the Baja recording).
+SCHOOL_DETECTION      = true
+# SCHOOL_FREQUENCIES_KHZ not set: each file uses its lowest-frequency channel.
+SCHOOL_THRESHOLD_DB   = -70.0
+SCHOOL_MIN_THICKNESS_M = 2.0
+SCHOOL_MIN_LENGTH_S   = 5.0
+SCHOOL_SMOOTH_RANGE_M = 0.5
+SCHOOL_SMOOTH_PINGS   = 5
+
+[output]
+# MVBS grid cell size.  The full-resolution cleaned Sv is also kept (Zarr) unless
+# main.py is run with --no-sv-store.
+MVBS_RANGE_BIN_M   = 1.0
+MVBS_PING_TIME_BIN = "10s"

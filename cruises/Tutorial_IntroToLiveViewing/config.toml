@@ -1,0 +1,115 @@
+# Western Flyer EK80 echogram - Cruise Processing Configuration
+# Echoview Getting Started tutorial data (2015, 120 and 200 kHz).  Cruise ID comes from the directory name (cruises/<cruise_id>/), not this file.
+# Section names are for readability only; every key must be unique across sections.
+
+# *** DEFAULT SETTINGS - NOT YET CHECKED FOR THIS CRUISE. Check the red seabed line on the echogram, the noise removal
+# and the water values (dashboard Calibration & QC tab), edit this file, then set CONFIG_CHECKED = true. ***
+[metadata]
+CONFIG_CHECKED = true
+# Informational only - not read by the pipeline
+SONAR = "Simrad EK80, WBT transceivers, ES120-7C and ES200-7C (120 and 200 kHz); Echoview Getting Started tutorial data"
+# What the 4 raw files contain (read from their headers; recorded 2015-05-13, file names start at 09:09:35, 09:10:04, 09:10:34 and 09:11:05, so about 2 minutes in all):
+#   - 2 split-beam channels pinging in sequence (sequential pinging): 120 kHz (ES120-7C, 250 W) and 200 kHz (ES200-7C, 150 W)
+#   - broadband FM chirps of 2.048 ms: 95-160 kHz (120 kHz channel) and 160-260 kHz (200 kHz channel)
+#   - sample interval 10.7 us (120 kHz, about 8 mm) and 5.3 us (200 kHz, about 4 mm); about 0.7 s between pings per channel
+#   - GPS fixes (NMEA) are recorded in the files, about 59.45 N 10.38 E (Oslofjord, Norway); the echosounder's water values
+#     are the EK80 factory defaults (10 C, 35 PSU, 100 m), so they were probably never set
+#   - the seabed is shallow, about 18 m in the part of the data that was tested
+
+[environment]
+# No measured water properties are available for this tutorial data set, so the values stored in the
+# .raw file (typed into the EK80 software at recording time) are used.  To override them, uncomment
+# and set the four values below.
+# TEMPERATURE_C  = 10.0
+# SALINITY_PSU   = 35.0
+# PRESSURE_DBAR  = 10.0
+# SOUND_SPEED_MS = 1500.0
+
+[calibration]
+# Optional EK80 calibration (.ecs) file from a calibration-sphere run.  Without
+# it, the factory gain, equivalent beam angle and sa-correction in the .raw
+# file are used.
+# ECS_FILE = "cruises/Tutorial_IntroToLiveViewing/calibration.ecs"
+
+[platform]
+# Depth of the transducer face below the sea surface (m).  Added to range to get depth.
+TRANSDUCER_DEPTH_M = 0.0
+
+[processing]
+# Samples closer than this to the transducer (transmit pulse and near field) are removed.
+NEAR_FIELD_EXCLUSION_M = 3.0
+
+# Background-noise removal (De Robertis & Higginbottom 2007): the noise level is
+# estimated from the quietest part of a BN_PING_NUM-ping by BN_RANGE_M-metre block.
+BACKGROUND_NOISE = true
+BN_PING_NUM      = 20
+BN_RANGE_M       = 5.0
+SNR_THRESHOLD_DB = 3.0       # samples closer to the noise than this are removed
+
+# Impulse-noise mask (Ryan et al. 2015): spikes that differ from the pings either side.
+IMPULSE_NOISE        = true
+IMPULSE_DEPTH_BIN_M  = 5.0
+IMPULSE_SIDE_PINGS   = 2
+IMPULSE_THRESHOLD_DB = 10.0
+
+# Seabed detection: first sample deeper than SEABED_MIN_RANGE_M whose Sv exceeds
+# SEABED_THRESHOLD_DB on the SEABED_CHANNEL_KHZ channel; everything below the
+# detected line (less SEABED_MASK_MARGIN_M) is masked on every channel.
+SEABED_CHANNEL_KHZ   = 120
+SEABED_MIN_RANGE_M   = 5.0
+SEABED_THRESHOLD_DB  = -40.0
+SEABED_OFFSET_M      = 0.5
+SEABED_MASK_MARGIN_M = 1.0
+
+# Optional transient-noise mask: short bursts that are much stronger than the pings either side.
+TRANSIENT_NOISE           = false
+TRANSIENT_DEPTH_BIN_M     = 5.0
+TRANSIENT_SIDE_PINGS      = 25
+TRANSIENT_EXCLUDE_ABOVE_M = 10.0
+TRANSIENT_THRESHOLD_DB    = 12.0
+
+# Bad data: pings inside any [start, end] pair (UTC) are blanked on every channel and dropped from
+# targets and results (off-transect pings, interference, ship manoeuvres).  Example:
+# EXCLUDE_TIME_RANGES_UTC = [["2015-05-13T09:10:00", "2015-05-13T09:10:05"]]
+EXCLUDE_TIME_RANGES_UTC = []
+
+[targets]
+# Single-target detection on target strength (TS): isolated echoes from individual animals.  A target
+# needs a TS peak above TARGET_TS_MIN_DB, at least TARGET_SNR_MIN_DB above the background noise, an
+# echo length (6 dB below the peak) of TARGET_MIN_LENGTH to TARGET_MAX_LENGTH pulse lengths, and, on
+# split-beam channels (both channels here are split-beam), a beam-pattern correction of at most TARGET_MAX_BEAM_COMP_DB.
+# Targets shallower than TARGET_MIN_DEPTH_M or within TARGET_SEABED_MARGIN_M of the seabed are ignored.
+TARGET_DETECTION         = true
+# -75 dB (default -60): small fish here have a corrected TS of about -66 to -70 dB at 200 kHz, which -60 rejected.
+TARGET_TS_MIN_DB         = -75.0
+TARGET_SNR_MIN_DB        = 10.0
+TARGET_MIN_LENGTH        = 0.8
+TARGET_MAX_LENGTH        = 1.8
+TARGET_MAX_BEAM_COMP_DB  = 6.0
+# A peak must also stand this far above the average TS of the samples around it (within the window,
+# not counting the target's own pulse).  Noise speckle almost never does, so this keeps noise out; 12 dB lets a few noise peaks through
+# near the seabed, 15 dB is the default.
+TARGET_BACKGROUND_WINDOW_M      = 5.0
+TARGET_PEAK_OVER_BACKGROUND_DB  = 15.0
+TARGET_MIN_DEPTH_M       = 5.0
+TARGET_SEABED_MARGIN_M   = 2.0
+
+[schools]
+# School / scattering-layer detection: connected areas of the block-averaged cleaned Sv above
+# SCHOOL_THRESHOLD_DB that are at least SCHOOL_MIN_THICKNESS_M thick and SCHOOL_MIN_LENGTH_S long.
+# Run on the frequencies listed (120 kHz here).
+SCHOOL_DETECTION      = true
+# Both channels (default: the lowest-frequency one only), so animals seen at 200 kHz are found too.
+SCHOOL_FREQUENCIES_KHZ = [120, 200]
+SCHOOL_THRESHOLD_DB   = -70.0
+SCHOOL_MIN_THICKNESS_M = 2.0
+SCHOOL_MIN_LENGTH_S   = 5.0
+SCHOOL_SMOOTH_RANGE_M = 0.5
+SCHOOL_SMOOTH_PINGS   = 5
+
+[output]
+# MVBS grid cell size.  The full-resolution cleaned Sv is also kept (Zarr) unless
+# main.py is run with --no-sv-store.
+# 0.5 m cells (default 1.0 m): the seabed is only about 18 m deep, so 1 m cells would leave very few rows.
+MVBS_RANGE_BIN_M   = 0.5
+MVBS_PING_TIME_BIN = "10s"

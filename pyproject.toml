@@ -1,0 +1,41 @@
+[project]
+name = "wf-cruise-echogram"
+version = "1.0.0"
+description = "Western Flyer EK80 echogram processing pipeline - raw .raw to calibrated Sv, MVBS and DuckDB"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+authors = [
+    {name = "Joe Carlisle", email = "joeacarlisle@gmail.com"},
+]
+
+# Echopype 0.12 requires Python 3.13 or newer (the CTD project is pinned to 3.12, so keep the
+# two projects in separate virtual environments).
+# Versions below are the ones the pipeline was tested with (Python 3.13; Linux).
+# Echopype pulls in compatible numpy, pandas, xarray, dask, zarr and netCDF4.
+# Calibrated results depend on the Echopype version, so it is pinned to the 0.12 series.
+dependencies = [
+    "echopype~=0.12.0",
+    "duckdb>=1.5",
+    "pyarrow>=20",
+    # Visualization (required by echogram_holoviews.py)
+    "bokeh~=3.10",
+    "datashader~=0.19",
+    "holoviews~=1.23",
+    "panel~=1.10",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+# The pipeline modules live at the project root (no src/ layout).
+# Listing them here makes them importable after `pip install -e .`
+[tool.setuptools]
+py-modules = [
+    "main",
+    "echogram_processing",
+    "ek80_ingestion",
+    "echogram_analysis",
+    "echogram_targets",
+    "echogram_holoviews",
+]
