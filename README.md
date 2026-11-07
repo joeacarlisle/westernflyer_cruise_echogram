@@ -166,6 +166,12 @@ The 20250416_Baja positions were read off the "Golfo de California 2025 - Echoso
 
 ### macOS / Linux
 
+Make the scripts executable once (first time only):
+
+    chmod +x scripts/linux_mac/*.sh
+
+Then run:
+
     ./scripts/linux_mac/echogram_build.sh 20250416_Baja
     ./scripts/linux_mac/echogram_build_Tutorial_IntroToLiveViewing.sh
 
