@@ -255,6 +255,19 @@ With `--write-parquet` the same tables are also written as Parquet under `proces
 
     SELECT frequency_khz, depth_m, AVG(mvbs_db) FROM echogram_mvbs GROUP BY 1, 2;
 
+### Zarr stores (full-resolution arrays)
+
+The DuckDB tables hold the coarse MVBS grid and the detections. The full-resolution arrays are too large for a database, so they are written as Zarr stores (chunked arrays in a folder) under `processed/<cruise_id>/`, one per raw file:
+
+| Store | Contents | Used for |
+|---|---|---|
+| `sv/<file_key>.zarr` | Cleaned, calibrated Sv at every ping and depth sample, all frequencies | The *Full resolution (cleaned Sv)* view, smoothing, automatic colour ranges and the Sv values in the details panel when you click the echogram |
+| `raw_level/<file_key>.zarr` | Uncalibrated echo level at every ping and depth sample, all frequencies | The *Uncalibrated echo level* view |
+
+The dashboard reads only the recording and frequency being shown, so these views stay fast. The paths are stored in the `echogram_files` table (`sv_zarr_path`, `raw_level_zarr_path`). Everything else (MVBS grid, difference view, seabed, targets, schools, integration, tables) comes from DuckDB and works without the Zarr stores. `--no-sv-store` skips the Sv stores; the output is much smaller, but the full-resolution view and smoothing are then unavailable.
+
+To open a store in Python: `xr.open_zarr('processed/<cruise_id>/sv/<file_key>.zarr', consolidated=False)`.
+
 ## config.toml Schema
 
 Section names are for readability only; every key must be unique.
@@ -263,7 +276,7 @@ Section names are for readability only; every key must be unique.
 `TEMPERATURE_C`, `SALINITY_PSU`, `PRESSURE_DBAR` (set together; sound speed is derived with Mackenzie 1981) or `SOUND_SPEED_MS`. If absent, the values stored in the `.raw` file are used.
 
 ### Calibration (optional)
-`ECS_FILE`: path to an EK80 calibration file from a sphere calibration. This code path is wired to Echopype's `ecs_file` option but has not been exercised on the Baja data.
+`ECS_FILE`: path to an EK80 calibration file from a sphere calibration. This code path is wired to Echopype's `ecs_file` option but has not been exercised on real data yet.
 
 ### Platform
 `TRANSDUCER_DEPTH_M`: transducer depth below the surface, added to range to give depth.
@@ -290,12 +303,12 @@ Section names are for readability only; every key must be unique.
 
 ## Known limitations
 
-* **Environment values.** The Baja `config.toml` uses temperature, salinity, pressure and sound speed from CTD cast 20250416_cast2 (about 7 km and 1 hour from the echosounder recording). Without an `[environment]` section the `.raw` file stores 10 C, 35 PSU and 100 m, the EK80 software defaults; the Calibration & QC tab warns when defaults were used.
+* **Environment values.** Calibration depends on the water's temperature, salinity, pressure and sound speed, and these can come from CTD data. Put the values from a CTD cast taken close to the echosounder recording, in space and in time, in the cruise's `config.toml`; the farther the cast is from the recording, the less well it describes the water that was surveyed. Without an `[environment]` section the `.raw` file stores 10 C, 35 PSU and 100 m, the EK80 software defaults; the Calibration & QC tab warns when defaults were used.
 * **Factory calibration only.** The stored gains are 18.0 dB (38 kHz) and 18.7 dB (200 kHz). No sphere-calibration file was supplied, so absolute Sv levels are uncertain. If you have an `.ecs` file, set `ECS_FILE`.
-* **200 kHz noise.** In the Baja recording the 200 kHz channel is mostly noise below about 20 m: calibrated Sv rises steadily with range, the signature of a noise floor. The seabed is still visible. Treat 200 kHz values below the near surface with caution, and raise `SNR_THRESHOLD_DB` if you want stricter noise removal.
+* **200 kHz noise.** In some recordings the 200 kHz channel is mostly noise below about 20 m: calibrated Sv rises steadily with range, the signature of a noise floor. The seabed is still visible. Treat 200 kHz values below the near surface with caution, and raise `SNR_THRESHOLD_DB` if you want stricter noise removal.
 * **Positions are per survey, not per ping.** The `.raw` file contained no valid GPS data, so each file gets the single position of its survey from `stations.csv`. A moving survey would need the ship's navigation log joined by time.
 * **Seabed detection.** A simple threshold detector. Check the red line on the echogram for each new cruise and adjust `SEABED_THRESHOLD_DB`.
-* **Single targets are candidates.** Beam compensation needs split-beam angles, which Echopype provides for 38 kHz only here (200 kHz is single-beam), so 200 kHz TS is uncompensated. Without a net or camera, a detected target is not a confirmed fish. The Baja file yields two 38 kHz candidates at the same depth, which looks more like a thin layer than fish.
+* **Single targets are candidates.** Beam compensation needs split-beam angles, which Echopype provides for 38 kHz only here (200 kHz is single-beam), so 200 kHz TS is uncompensated. Without a net or camera, a detected target is not a confirmed fish. A recording can yield only a few 38 kHz candidates at the same depth, which looks more like a thin layer than fish.
 * **Not implemented:** sphere calibration, per-ping impedance traces (impedance is stored once per file), video, fish tracking, multiple detection configurations, hand-edited seabed lines, real-time operation.
 * **Sequential pinging.** If the channels transmit in turn (the Echoview tutorial data does), each channel's pings are paired in order and treated as simultaneous; the real time difference is about one ping interval and is ignored. A channel's extra unpaired ping at the end is dropped. Broadband (FM) files are calibrated in broadband mode with pulse compression.
 * **Mixed CW and broadband files** are rejected with an error; split them first.
