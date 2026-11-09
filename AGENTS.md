@@ -31,7 +31,6 @@ The codebase is organized into modular components, each responsible for a distin
 **Role:** Pure computation shared by the build and the dashboard (no I/O).
 - `echogram_analysis.py`: block averaging, `integrate_layers()` (sa, NASC), `region_stats()`, `frequency_difference()`, `detect_schools()`, `load_nav()`/`interpolate_track()`, `transient_noise_mask()`.
 - `echogram_targets.py`: `detect_single_targets()` (TS, beam compensation, peak-over-background test).
-- Covered by `python tests/run_tests.py` (synthetic data; run it after any change here).
 
 ### 3. Orchestrator Component (`main.py`)
 **Role:** Workflow Manager & Persistence
@@ -79,5 +78,5 @@ When an AI agent interacts with this repository, it should adhere to the followi
 - **Database:** Verify output in `processed/wf_echogram.duckdb`. The `build_metadata` and `echogram_files` tables should be checked to confirm successful persistence and provenance.
 
 ### Dependencies
-- This project requires **Python 3.13 or newer** (Echopype 0.12). The sibling CTD project uses Python 3.12; do not share a virtual environment between them.
+- This project requires **Python 3.13 or newer** (Echopype 0.12).
 - Other dependencies are listed in `pyproject.toml`.

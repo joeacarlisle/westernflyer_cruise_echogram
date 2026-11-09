@@ -25,7 +25,7 @@ To avoid Windows permission issues, place the root folder inside your Windows us
 
 ## Python Installation Requirements
 
-This project requires **Python 3.13 or newer** (Echopype 0.12 does not install on 3.12). Your CTD project is pinned to Python 3.12, so keep the two in separate virtual environments; Python 3.12 and 3.13 can be installed side by side. Do not uninstall 3.12.
+This project requires **Python 3.13 or newer** (Echopype 0.12 does not install on 3.12).
 
 ### Windows
 
@@ -35,7 +35,7 @@ Install Python 3.13 from python.org (not from the Microsoft Store, which puts it
 2. Download the "Windows installer (64-bit)" for Python 3.13 from https://www.python.org/downloads/windows/.
 3. Run it and choose **Install Now**. Leave **"Install for all users"** unticked, so it installs for your user only. Leave the **py launcher** ticked.
 4. When the installer asks to **"Add python.exe to PATH"**, select **No** (leave it unticked).
-5. Python installs to `C:\Users\<your_username>\AppData\Local\Programs\Python\Python313\`, next to `Python312`.
+5. Python installs to `C:\Users\<your_username>\AppData\Local\Programs\Python\Python313\`.
 6. Check it in Command Prompt: `py -0p` should list `Python313` under `AppData\Local\Programs\Python`.
 
 ### macOS (Homebrew)
@@ -68,7 +68,6 @@ This has the advantage of not requiring root privileges, and it does not install
     |   echogram_processing.py  noise removal, seabed, masking, MVBS gridding, QC, schools
     |   echogram_analysis.py    layers, NASC, regions, difference, school and track helpers
     |   echogram_targets.py     single-target (TS) detection
-    |   tests/run_tests.py      synthetic checks (python tests/run_tests.py)
     |   ek80_ingestion.py       .raw -> EchoData (optional .nc), calibration to Sv
     |   main.py                 orchestrator
     |   pyproject.toml
