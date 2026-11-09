@@ -63,6 +63,8 @@ This has the advantage of not requiring root privileges, and it does not install
 
 *`logs/` and `processed/` are created automatically on first run.*
 
+*Each cruise's `raw/` folder is empty after install. The `.raw` files are over 100 MB, so they are not on GitHub: request them from the Western Flyer organization and add them to `raw/` manually.*
+
     .
     |   echogram_holoviews.py   dashboard
     |   echogram_processing.py  noise removal, seabed, masking, MVBS gridding, QC, schools
@@ -75,7 +77,7 @@ This has the advantage of not requiring root privileges, and it does not install
     |   \---20250416_Baja
     |       |   config.toml     processing parameters
     |       |   stations.csv    survey positions (station_id, lat, lon)
-    |       \---raw
+    |       \---raw            add the .raw files here manually (not on GitHub)
     |               250416WF-D20250416-T191232 (1).raw
     +---logs
     +---processed
