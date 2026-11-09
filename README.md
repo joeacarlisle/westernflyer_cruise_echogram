@@ -12,7 +12,7 @@ This repository contains the processing pipeline and visualization suite for Sim
 * **Modular Cruise Architecture:** Each expedition is isolated under `cruises/<cruise_id>/`. Adding a cruise requires only a directory with the `.raw` files and a `config.toml`; the directory name is the cruise ID.
 * **Atomic, Idempotent Storage:** Small tables go to DuckDB (and, with `--write-parquet`, to Parquet). Per-cruise records are replaced atomically inside a single transaction. A `build_metadata` table records the SHA-256 of `config.toml` and of every raw file, the Echopype version and the git commit, so every row is traceable.
 * **Per-Build Audit Logging:** Each invocation writes a fresh, timestamped log file (`logs/wf_echogram_build_<cruise>_<timestamp>.log`).
-* **Survey positions:** The `.raw` files carry no GPS, so positions come from `stations.csv` (one row per survey) and are joined onto each file by `survey_id`.
+* **Survey positions:** The `.raw` files carry no GPS, so positions come from `stations.csv` (one row per survey) and are joined onto each file by `station_id`.
 * **Echosounder analysis tools (all in Python):** frequency difference, echo integration by depth layer (sa, NASC), single-target detection (TS, split-beam angles), school/layer detection, drawn regions with statistics and a class label, excluded-ping and transient-noise handling, calibration and QC tables, an optional ship track from a navigation log, and CSV export of every table.
 * **Interactive Dashboard:** A Panel/HoloViews dashboard renders full-resolution echograms with Datashader (fast at any zoom), the MVBS grid, the seabed line, a map of survey positions, tables and build provenance.
 
@@ -75,7 +75,7 @@ This has the advantage of not requiring root privileges, and it does not install
     +---cruises
     |   \---20250416_Baja
     |       |   config.toml     processing parameters
-    |       |   stations.csv    survey positions (survey_id, lat, lon)
+    |       |   stations.csv    survey positions (station_id, lat, lon)
     |       \---raw
     |               250416WF-D20250416-T191232 (1).raw
     +---logs
@@ -141,18 +141,17 @@ Settings live in `cruises/<cruise_id>/config.toml`. You do not have to write one
 
 ## stations.csv
 
-One row per survey. `survey_id` is the start of the raw file name, up to the first `-` (for `250416WF-D20250416-T191232 (1).raw` it is `250416WF`).
+One row per survey. `station_id` is the start of the raw file name, up to the first `-` (for `250416WF-D20250416-T191232 (1).raw` it is `250416WF`).
 
 | Column | Meaning |
 |---|---|
-| `survey_id` | Required, unique |
-| `lat_decimal`, `lon_decimal` | Decimal degrees (negative south and west). Used if present |
-| `lat`, `lon` | Alternative: `DD-MM.mmN` and `DDD-MM.mmW`, the format used by the CTD project |
+| `station_id` | Required, unique |
+| `lat`, `lon` | Required. Signed decimal degrees (north positive, west negative; blank if unknown). The same columns and format as the CTD project's `stations.csv` |
 | `confidence`, `note` | Optional, carried into the database and shown on the map |
 
-**stations.csv is written automatically from GPS when it is missing.** If a cruise has no `stations.csv`, the build reads the GPS fixes recorded inside the raw files (NMEA `GGA` sentences in the navigation datagrams) and writes one row per survey id: the median fix, a confidence from the fix quality (`good`, or `fair` for plain GPS or a moving ship), and a note with the fix count and spread. It never overwrites a file you made, and it logs a warning asking you to check the positions. If the ship moved more than 500 m during a survey, one position is a poor description, so the build also writes a time-based `nav.csv` (one fix per second, timed with the same clock as the pings, so a GPS clock offset does not matter) and the dashboard draws the track. If the files hold no usable GPS (the Baja file does not), positions stay empty and the build says so.
+**stations.csv is written automatically from GPS when it is missing.** If a cruise has no `stations.csv`, the build reads the GPS fixes recorded inside the raw files (NMEA `GGA` sentences in the navigation datagrams) and writes one row per station id: the median fix, a confidence from the fix quality (`good`, or `fair` for plain GPS or a moving ship), and a note with the fix count and spread. It never overwrites a file you made, and it logs a warning asking you to check the positions. If the ship moved more than 500 m during a survey, one position is a poor description, so the build also writes a time-based `nav.csv` (one fix per second, timed with the same clock as the pings, so a GPS clock offset does not matter) and the dashboard draws the track. If the files hold no usable GPS (the Baja file does not), positions stay empty and the build says so.
 
-**Positions from GPS in the raw files.** Some `.raw` files carry the ship's GPS as NMEA text (`$..GGA` sentences). `Tutorial_IntroToLiveViewing` does: its `stations.csv` row is the median of the 243 fixes found in the four files (all fix quality 4, the ship did not move: about 9 m spread in latitude, under 1 m in longitude), rated `good`. All four files share the survey id `EK80_SimradEcho_WC381_Sequential`, so one row covers them. The GPS clock in those files reads about 5 minutes later than the file names, which matters only if you match ping times to GPS times. A moving survey needs a time-based `nav.csv` (`time_utc`, `lat`, `lon`) instead of one position per survey; the build writes one automatically (see above).
+**Positions from GPS in the raw files.** Some `.raw` files carry the ship's GPS as NMEA text (`$..GGA` sentences). `Tutorial_IntroToLiveViewing` does: its `stations.csv` row is the median of the 243 fixes found in the four files (all fix quality 4, the ship did not move: about 9 m spread in latitude, under 1 m in longitude), rated `good`. All four files share the station id `EK80_SimradEcho_WC381_Sequential`, so one row covers them. The GPS clock in those files reads about 5 minutes later than the file names, which matters only if you match ping times to GPS times. A moving survey needs a time-based `nav.csv` (`time_utc`, `lat`, `lon`) instead of one position per survey; the build writes one automatically (see above).
 
 The 20250416_Baja positions were read off the "Golfo de California 2025 - Echosounder surveys" map (a picture with no coordinates), so they are approximate (about +/- 3 km). Replace them with positions from the ship's navigation log when you have them.
 
@@ -248,8 +247,8 @@ For long recordings, use the MVBS view or zoom into a time window. The full-reso
 |---|---|---|
 | `echogram_mvbs` | file x channel x ping-time bin x depth bin | `frequency_khz`, `ping_time`, `depth_m`, `mvbs_db` |
 | `echogram_seabed` | ping | `ping_time`, `seabed_depth_m`, `frequency_khz` (detection channel) |
-| `echogram_files` | raw file | times, ping count, frequencies, waveform mode, sound speed, seabed range, `survey_id`, `latitude`, `longitude`, SHA-256 |
-| `echogram_stations` | survey in `stations.csv` | `survey_id`, `latitude`, `longitude`, `position_confidence`, `processed` (a raw file matched) |
+| `echogram_files` | raw file | times, ping count, frequencies, waveform mode, sound speed, seabed range, `station_id`, `latitude`, `longitude`, SHA-256 |
+| `echogram_stations` | survey in `stations.csv` | `station_id`, `latitude`, `longitude`, `position_confidence`, `processed` (a raw file matched) |
 | `echogram_calibration` | file x channel | environment source, sound speed, absorption, gain, Sa correction, beam angle and widths, power, pulse length, impedances |
 | `echogram_qc` | file x frequency | ping gaps, excluded pings, valid fraction above seabed, noise level |
 | `echogram_targets` | detected single target | time, depth, TS (raw and beam-compensated), SNR, peak-over-background, along/athwart angle, echo length ratio |

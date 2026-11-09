@@ -38,7 +38,7 @@ The codebase is organized into modular components, each responsible for a distin
 - **Responsibilities:**
     - Orchestrates the end-to-end pipeline for a specific cruise.
     - Manages CLI arguments, logging, and directory resolution.
-    - Joins survey positions onto each file by `survey_id` (`attach_positions()`).
+    - Joins survey positions onto each file by `station_id` (`attach_positions()`).
     - Writes cleaned-Sv Zarr stores and atomic, idempotent DuckDB commits. The `.nc` archive and the Parquet copies are written only with `--write-netcdf` and `--write-parquet`. A table whose columns changed is recreated, so rebuild other cruises afterwards.
     - Records build provenance (git commit hash, `config.toml` SHA-256, raw-file SHA-256 manifest, Echopype version, timestamps).
 - **Key Interface:** `main()` entry point and `process_one_file()`.
@@ -65,7 +65,7 @@ When an AI agent interacts with this repository, it should adhere to the followi
 1. **Directory Structure:** Create `cruises/<cruise_id>/`.
 2. **Raw Data:** Place `.raw` files in `cruises/<cruise_id>/raw/`.
 3. **Configuration:** A cruise with no `config.toml` gets one written automatically at build time with default settings and `CONFIG_CHECKED = false` (or run `python main.py <cruise_id> --init-config`; or copy one from an existing cruise). While `CONFIG_CHECKED = false` the build logs REVIEW REQUIRED and the dashboard shows a red banner on the Calibration & QC and Processing tabs; the user sets it to true after checking the seabed line, noise removal and water values. Keys missing from a cruise file fall back to `config.defaults.toml`. Never put measured environment values in the defaults file.
-4. **Positions:** If `stations.csv` is missing the build writes one from the GPS fixes inside the raw files (and a `nav.csv` if the ship moved); check it. Otherwise add `stations.csv` with a `survey_id` (start of the raw file name, before the first `-`) and a decimal or degree-minute position per survey.
+4. **Positions:** If `stations.csv` is missing the build writes one from the GPS fixes inside the raw files (and a `nav.csv` if the ship moved); check it. Otherwise add `stations.csv` with a `station_id` (start of the raw file name, before the first `-`) and decimal-degree `lat` and `lon` (negative south/west) per survey. These three column names match the CTD project's `stations.csv`.
 
 ### Modifying the Pipeline
 - **Calibration or ingestion changes:** `ek80_ingestion.py`. Use Echopype's public API (`open_raw`, `compute_Sv`) so results stay comparable with other Echopype users.

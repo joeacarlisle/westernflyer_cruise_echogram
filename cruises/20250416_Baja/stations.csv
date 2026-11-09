@@ -1,14 +1,14 @@
-survey_id,lat,lon,lat_decimal,lon_decimal,confidence,note
-250416WF,25-32.62N,110-59.49W,25.5436,-110.9915,inferred,"Not labelled on the map. Second dot beside 250427WF at Punta Marciel, matching the 16 Apr CTD casts there. Corrected 2 Nov 2026 by fitting the coastline locally around the dot."
-250427WF,25-34.38N,111-00.75W,25.5730,-111.0125,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
-250430WF,27-17.02N,112-05.35W,27.2837,-112.0892,fair,Dots stacked within ~3 km with 250501WF and 250507WF; position is the leader-line end. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
-250501WF,27-16.03N,112-06.33W,27.2671,-112.1055,fair,Dots stacked within ~3 km with 250430WF and 250507WF; position is the leader-line end. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
-250504WF,27-23.12N,112-13.90W,27.3854,-112.2316,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
-250504bWF,27-29.71N,112-18.52W,27.4952,-112.3087,fair,Leader line ends on a stacked vertical trail of dots. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
-250506WF,27-31.45N,112-18.94W,27.5242,-112.3157,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
-250507WF,27-15.53N,112-05.21W,27.2588,-112.0868,fair,Dots stacked within ~3 km with 250430WF and 250501WF; position is the opaque dot. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
-250509WF,25-45.62N,111-15.19W,25.7604,-111.2531,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
-250516WF,24-51.28N,110-34.27W,24.8547,-110.5711,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
-250518WF,24-12.14N,110-18.85W,24.2024,-110.3142,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
-250520WF,24-11.12N,110-22.36W,24.1853,-110.3726,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
-250526WF,23-01.66N,109-30.79W,23.0276,-109.5132,fair,"Near the bottom edge of the map, so the coastline fit used a smaller window. Corrected 2 Nov 2026 by fitting the coastline locally around the dot."
+station_id,lat,lon,confidence,note
+250416WF,25.5436,-110.9915,inferred,"Not labelled on the map. Second dot beside 250427WF at Punta Marciel, matching the 16 Apr CTD casts there. Corrected 2 Nov 2026 by fitting the coastline locally around the dot."
+250427WF,25.5730,-111.0125,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
+250430WF,27.2837,-112.0892,fair,Dots stacked within ~3 km with 250501WF and 250507WF; position is the leader-line end. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
+250501WF,27.2671,-112.1055,fair,Dots stacked within ~3 km with 250430WF and 250507WF; position is the leader-line end. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
+250504WF,27.3854,-112.2316,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
+250504bWF,27.4952,-112.3087,fair,Leader line ends on a stacked vertical trail of dots. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
+250506WF,27.5242,-112.3157,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
+250507WF,27.2588,-112.0868,fair,Dots stacked within ~3 km with 250430WF and 250501WF; position is the opaque dot. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
+250509WF,25.7604,-111.2531,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
+250516WF,24.8547,-110.5711,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
+250518WF,24.2024,-110.3142,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
+250520WF,24.1853,-110.3726,good,Opaque dot at the end of the leader line. Corrected 2 Nov 2026 by fitting the coastline locally around the dot.
+250526WF,23.0276,-109.5132,fair,"Near the bottom edge of the map, so the coastline fit used a smaller window. Corrected 2 Nov 2026 by fitting the coastline locally around the dot."

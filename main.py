@@ -10,7 +10,7 @@ source of truth for the cruise.  Expected layout:
 
     cruises/<cruise_id>/
         config.toml     processing parameters (environment, noise, seabed, MVBS grid)
-        stations.csv    optional: survey_id, lat, lon (the .raw files carry no GPS here)
+        stations.csv    optional: station_id, lat, lon (the .raw files carry no GPS here)
         nav.csv         optional: time_utc, lat, lon ship log; gives each ping a position, speed and distance
         raw/            raw Simrad EK80 .raw files - one per recording
 
@@ -67,7 +67,7 @@ import ek80_ingestion
 import echogram_analysis
 import echogram_targets
 from ek80_ingestion import (calibrate_sv, calibration_table, compute_ts, ingest_ek80_raw, load_stations,
-                            raw_file_key, relative_echo_level, survey_id_from_file_key)
+                            raw_file_key, relative_echo_level, station_id_from_file_key)
 
 BASE_DIR = pathlib.Path(__file__).resolve().parent
 DEFAULT_DB_PATH = BASE_DIR / "processed" / "wf_echogram.duckdb"
@@ -306,21 +306,21 @@ def _type_position_columns(df):
 
 
 def attach_positions(files_df, stations_df, cruise_id):
-    """Adds survey_id, latitude, longitude and position metadata to the file table.
+    """Adds station_id, latitude, longitude and position metadata to the file table.
 
     Returns (files_df, stations_out) where stations_out lists every survey in
     stations.csv with a ``processed`` flag.  Files without a matching survey get
     NaN positions and a warning.
     """
     files_df = files_df.copy()
-    files_df['survey_id'] = files_df['file_key'].map(survey_id_from_file_key)
-    pos_cols = ['survey_id', 'latitude', 'longitude', 'position_confidence', 'position_note']
-    files_df = files_df.merge(stations_df[pos_cols], on='survey_id', how='left')
+    files_df['station_id'] = files_df['file_key'].map(station_id_from_file_key)
+    pos_cols = ['station_id', 'latitude', 'longitude', 'position_confidence', 'position_note']
+    files_df = files_df.merge(stations_df[pos_cols], on='station_id', how='left')
     files_df = _type_position_columns(files_df)
     for row in files_df[files_df['latitude'].isna()].itertuples():
-        logging.warning(f"No position in stations.csv for survey '{row.survey_id}' ({row.filename})")
+        logging.warning(f"No position in stations.csv for survey '{row.station_id}' ({row.filename})")
     stations_out = _type_position_columns(stations_df[pos_cols].copy())
-    stations_out['processed'] = stations_out['survey_id'].isin(files_df['survey_id'])
+    stations_out['processed'] = stations_out['station_id'].isin(files_df['station_id'])
     stations_out.insert(0, 'cruise_id', cruise_id)
     return files_df, stations_out
 
@@ -451,11 +451,11 @@ def write_stations_from_gps(cruise_dir, files):
         logging.warning("No stations.csv, and the raw files hold no usable GPS: positions will be empty.")
         return None
     target = cruise_dir / 'stations.csv'
-    cols = ['survey_id', 'lat', 'lon', 'lat_decimal', 'lon_decimal', 'confidence', 'note']
+    cols = ['station_id', 'lat', 'lon', 'confidence', 'note']
     pd.DataFrame(rows)[cols].to_csv(target, index=False)
     logging.warning(f"No stations.csv: wrote {target} from GPS fixes inside the raw files "
-                    f"({', '.join(r['survey_id'] for r in rows)}). Check the positions.")
-    moved = [r['survey_id'] for r in rows if 'MOVED' in r['note']]
+                    f"({', '.join(r['station_id'] for r in rows)}). Check the positions.")
+    moved = [r['station_id'] for r in rows if 'MOVED' in r['note']]
     nav_path = cruise_dir / 'nav.csv'
     if moved and not nav_path.exists():
         track = pd.concat([f for f in fixes.values()], ignore_index=True).sort_values('time')

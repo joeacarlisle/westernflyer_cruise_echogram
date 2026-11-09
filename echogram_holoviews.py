@@ -689,22 +689,22 @@ def _limit_map_zoom(plot, element):
 
 
 def _map_impl(cruise, file_key):
-    st = query_df("SELECT survey_id, latitude, longitude, position_confidence, processed "
-                  "FROM echogram_stations WHERE cruise_id = ? ORDER BY survey_id", [cruise])
+    st = query_df("SELECT station_id, latitude, longitude, position_confidence, processed "
+                  "FROM echogram_stations WHERE cruise_id = ? ORDER BY station_id", [cruise])
     st = st.dropna(subset=['latitude', 'longitude'])
     if st.empty:
         return pn.pane.Alert('No survey positions. Add cruises/<cruise>/stations.csv and rebuild.',
                              alert_type='warning')
     row = _file_row(file_key)
-    selected = row['survey_id'] if row is not None and 'survey_id' in row else None
+    selected = row['station_id'] if row is not None and 'station_id' in row else None
     st['x'], st['y'] = _to_mercator(st['longitude'].values, st['latitude'].values)
-    st['status'] = np.where(st['survey_id'] == selected, 'selected recording',
+    st['status'] = np.where(st['station_id'] == selected, 'selected recording',
                             np.where(st['processed'], 'processed', 'not yet processed'))
     st['position'] = st['position_confidence'].replace('', 'unrated')
     # Draw the selected recording last so it is never hidden behind a neighbouring dot.
     order = {'not yet processed': 0, 'processed': 1, 'selected recording': 2}
     st = st.sort_values('status', key=lambda c: c.map(order)).reset_index(drop=True)
-    pts = hv.Points(st, kdims=['x', 'y'], vdims=['survey_id', 'latitude', 'longitude', 'position', 'status']).opts(
+    pts = hv.Points(st, kdims=['x', 'y'], vdims=['station_id', 'latitude', 'longitude', 'position', 'status']).opts(
         color='status', cmap=STATUS_COLORS, size=13, line_color='white', line_width=1.5,
         tools=['hover'], show_legend=True, legend_position='bottom_left')
     # Esri Ocean Base (seafloor relief) with its labels; holoviews has no ready-made source for these two.
@@ -772,7 +772,7 @@ view_mvbs_table = pn.Column(pn.bind(_mvbs_table_impl, file_select), sizing_mode=
 
 
 def _summary_impl(cruise):
-    files = query_df("SELECT filename, survey_id, latitude, longitude, first_ping, last_ping, n_pings, "
+    files = query_df("SELECT filename, station_id, latitude, longitude, first_ping, last_ping, n_pings, "
                      "frequencies_khz, waveform_mode, sound_speed_ms, seabed_min_m, seabed_max_m "
                      "FROM echogram_files "
                      "WHERE cruise_id = ? ORDER BY first_ping", [cruise])

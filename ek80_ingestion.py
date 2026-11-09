@@ -135,13 +135,6 @@ def read_gps_fixes(path):
     return pd.DataFrame(rows, columns=['time', 'lat', 'lon', 'quality', 'satellites'])
 
 
-def _fmt_deg_min(value, pos, neg, width):
-    hemi = pos if value >= 0 else neg
-    value = abs(value)
-    deg = int(value)
-    return f"{deg}-{(value - deg) * 60:05.2f}{hemi}"
-
-
 def _spread_m(fixes):
     """Largest north-south or east-west extent of a set of fixes, in metres."""
     ns = (fixes['lat'].max() - fixes['lat'].min()) * 111_000.0
@@ -153,7 +146,7 @@ def stations_from_gps(raw_files, moving_m=500.0):
     """One station row per survey from the GPS inside the raw files.
 
     ``raw_files`` is a list of paths.  Returns (rows, fixes_by_survey): rows are dicts with the
-    stations.csv columns (survey_id, lat, lon, lat_decimal, lon_decimal, confidence, note); a survey
+    stations.csv columns (station_id, lat, lon, confidence, note; lat/lon are decimal degrees); a survey
     with no usable GPS gets no row.  Surveys whose fixes spread more than ``moving_m`` are flagged in
     the note (one position is then a poor description) and the caller may write a nav.csv.
     """
@@ -161,7 +154,7 @@ def stations_from_gps(raw_files, moving_m=500.0):
     for p in raw_files:
         fixes = read_gps_fixes(p)
         if len(fixes):
-            by_survey.setdefault(survey_id_from_file_key(raw_file_key(pathlib.Path(p))), []).append(fixes)
+            by_survey.setdefault(station_id_from_file_key(raw_file_key(pathlib.Path(p))), []).append(fixes)
     rows, out = [], {}
     for sid, parts in by_survey.items():
         fixes = pd.concat(parts, ignore_index=True)
@@ -175,57 +168,51 @@ def stations_from_gps(raw_files, moving_m=500.0):
                 f"fix quality {int(q)} (1 = GPS, 2 = DGPS, 4 = RTK fixed, 5 = RTK float); the fixes spread {spread:.0f} m"
                 + (": the ship MOVED, so one position is a poor description - use the track in nav.csv. " if moving else ". ")
                 + "The GPS clock can differ from the file-name clock; ping times are matched using the file clock.")
-        rows.append(dict(survey_id=sid, lat=_fmt_deg_min(la, 'N', 'S', 2), lon=_fmt_deg_min(lo, 'E', 'W', 3),
-                         lat_decimal=round(la, 5), lon_decimal=round(lo, 5), confidence=confidence, note=note))
+        rows.append(dict(station_id=sid, lat=round(la, 5), lon=round(lo, 5), confidence=confidence, note=note))
     return rows, out
-
-
-def _parse_deg_min(text):
-    """'25-31.73N' / '110-59.91W' -> signed decimal degrees."""
-    text = str(text).strip()
-    hemi = text[-1].upper()
-    deg, minutes = text[:-1].split('-')
-    value = float(deg) + float(minutes) / 60.0
-    return -value if hemi in 'SW' else value
 
 
 def load_stations(path):
     """Loads ``stations.csv`` (one row per survey) with decimal latitude/longitude.
 
-    Required column: ``survey_id`` (the start of the raw file name, e.g. ``250416WF``).
-    Position comes from ``lat_decimal``/``lon_decimal`` if present, otherwise from
-    ``lat``/``lon`` written as ``DD-MM.mmN`` / ``DDD-MM.mmW``.  Optional columns
+    Required columns: ``station_id`` (the start of the raw file name, e.g. ``250416WF``) and
+    ``lat``/``lon`` in signed decimal degrees (negative = south/west; blank = unknown).  The
+    same three columns are used by the CTD project's stations.csv.  Optional columns
     ``confidence`` and ``note`` are carried through.  Returns an empty frame if the
     file does not exist.
     """
-    columns = ['survey_id', 'latitude', 'longitude', 'position_confidence', 'position_note']
+    columns = ['station_id', 'latitude', 'longitude', 'position_confidence', 'position_note']
     path = pathlib.Path(path)
     if not path.exists():
         return pd.DataFrame(columns=columns)
     df = pd.read_csv(path, dtype=str).fillna('')
-    if 'survey_id' not in df:
-        raise ValueError(f"{path.name}: missing required column 'survey_id'")
-    if {'lat_decimal', 'lon_decimal'} <= set(df.columns):
-        lat = pd.to_numeric(df['lat_decimal'], errors='coerce')
-        lon = pd.to_numeric(df['lon_decimal'], errors='coerce')
-    elif {'lat', 'lon'} <= set(df.columns):
-        lat = df['lat'].map(lambda v: _parse_deg_min(v) if v else np.nan)
-        lon = df['lon'].map(lambda v: _parse_deg_min(v) if v else np.nan)
-    else:
-        raise ValueError(f"{path.name}: needs lat_decimal/lon_decimal or lat/lon columns")
+    missing = [c for c in ('station_id', 'lat', 'lon') if c not in df]
+    if missing:
+        raise ValueError(f"{path.name}: missing required column(s) {missing}; "
+                         f"stations.csv needs station_id, lat, lon (decimal degrees)")
+    pos = {}
+    for col, limit in (('lat', 90.0), ('lon', 180.0)):
+        num = pd.to_numeric(df[col].str.strip().replace('', np.nan), errors='coerce')
+        bad = (df[col].str.strip() != '') & (num.isna() | (num.abs() > limit))
+        if bad.any():
+            rows = [f"{s}: {v!r}" for s, v in zip(df.loc[bad, 'station_id'], df.loc[bad, col])]
+            raise ValueError(f"{path.name}: '{col}' must be decimal degrees within +/-{limit:g} "
+                             f"(negative = south/west); bad value(s): {rows}")
+        pos[col] = num
+    lat, lon = pos['lat'], pos['lon']
     out = pd.DataFrame({
-        'survey_id': df['survey_id'].str.strip(),
+        'station_id': df['station_id'].str.strip(),
         'latitude': lat, 'longitude': lon,
         'position_confidence': df.get('confidence', ''),
         'position_note': df.get('note', ''),
     })
-    dup = out['survey_id'][out['survey_id'].duplicated()].unique()
+    dup = out['station_id'][out['station_id'].duplicated()].unique()
     if len(dup):
-        raise ValueError(f"{path.name}: duplicate survey_id values: {list(dup)}")
+        raise ValueError(f"{path.name}: duplicate station_id values: {list(dup)}")
     return out
 
 
-def survey_id_from_file_key(file_key):
+def station_id_from_file_key(file_key):
     """'250416WF-D20250416-T191232_1' -> '250416WF' (text before the first '-')."""
     return str(file_key).split('-')[0]
 

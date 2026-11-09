@@ -1,2 +1,2 @@
-survey_id,lat,lon,lat_decimal,lon_decimal,confidence,note
-EK80_SimradEcho_WC381_Sequential,59-26.75N,10-22.80E,59.44583,10.38005,good,"Median of 243 GPS (NMEA GGA) fixes recorded inside the 4 raw files (all fix quality 4); the ship did not move (latitude spread 9 m, longitude spread 0 m). One row covers all four files because they share the survey id. The GPS clock in the files reads about 5 minutes later than the file names."
+station_id,lat,lon,confidence,note
+EK80_SimradEcho_WC381_Sequential,59.44583,10.38005,good,"Median of 243 GPS (NMEA GGA) fixes recorded inside the 4 raw files (all fix quality 4); the ship did not move (latitude spread 9 m, longitude spread 0 m). One row covers all four files because they share the survey id. The GPS clock in the files reads about 5 minutes later than the file names."

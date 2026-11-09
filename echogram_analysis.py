@@ -176,14 +176,13 @@ def haversine_m(lat1, lon1, lat2, lon2):
 
 
 def load_nav(path):
-    """Reads a navigation log: columns time_utc, lat, lon (decimal degrees; ``lat_decimal`` and
-    ``lon_decimal`` are also accepted).  Returns a frame sorted by time, or an empty frame."""
+    """Reads a navigation log: columns time_utc, lat, lon (decimal degrees).  Returns a frame sorted by time, or an empty frame."""
     cols = ['time_utc', 'lat', 'lon']
     try:
         df = pd.read_csv(path)
     except (FileNotFoundError, pd.errors.EmptyDataError):
         return pd.DataFrame(columns=cols)
-    df = df.rename(columns={'lat_decimal': 'lat', 'lon_decimal': 'lon', 'time': 'time_utc', 'datetime': 'time_utc'})
+    df = df.rename(columns={'time': 'time_utc', 'datetime': 'time_utc'})
     missing = [c for c in cols if c not in df]
     if missing:
         raise ValueError(f"{path}: missing column(s) {missing}; need time_utc, lat, lon")
