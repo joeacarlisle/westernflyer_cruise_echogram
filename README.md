@@ -78,7 +78,6 @@ This has the advantage of not requiring root privileges, and it does not install
     |       |   config.toml     processing parameters
     |       |   stations.csv    survey positions (station_id, lat, lon)
     |       \---raw            add the .raw files here manually (not on GitHub)
-    |               250416WF-D20250416-T191232 (1).raw
     +---logs
     +---processed
     |   |   wf_echogram.duckdb
