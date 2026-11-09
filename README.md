@@ -106,6 +106,21 @@ This has the advantage of not requiring root privileges, and it does not install
 * **echogram_holoviews.py** - The Panel dashboard.
 * **scripts/** - Windows `.bat` and Linux/macOS `.sh` wrappers for building and for launching the dashboard.
 
+## Prerequisites
+
+**Git** must be installed to download the software from GitHub (`git clone`). Download it from [git-scm.com](https://git-scm.com/downloads) and confirm with `git --version`.
+
+Python 3.13 is required (see above). Echopype and the other dependencies are declared in `pyproject.toml` and installed from PyPI when you run `pip install -e .` - no manual download required.
+
+**Raw data files are not in this repository.** The EK80 `.raw` files are over 100 MB each, which exceeds GitHub's file size limit, so they cannot be uploaded to GitHub. Request them from the Western Flyer organization. Each cruise's `raw/` folder is in the repository but empty (it holds only a `.gitkeep` placeholder); put the `.raw` files in `cruises/<cruise_id>/raw/` (see *Preparing a New Cruise*).
+
+## Getting Started
+
+    git clone https://github.com/joeacarlisle/westernflyer_cruise_echogram.git
+    cd westernflyer_cruise_echogram
+
+Then follow the **Prerequisites** and **Setup** sections to install Python 3.13 and the project dependencies.
+
 ## Setup: Virtual Environment and Installation
 
 ### Windows (Command Prompt)
@@ -132,7 +147,7 @@ Settings live in `cruises/<cruise_id>/config.toml`. You do not have to write one
 
 ## Preparing a New Cruise
 
-1. Create `cruises/<cruise_id>/raw/` and put the `.raw` files in it.
+1. Create `cruises/<cruise_id>/raw/` (for a cruise already in the repository it exists, empty) and put the `.raw` files in it (the `.raw` files are not stored on GitHub; request them from the Western Flyer organization).
 2. Skip this step to have the build write a default-settings `config.toml` for you (then check it; see *Configuration* above), run `python main.py <cruise_id> --init-config` to write it now, or copy one from an existing cruise.
 3. Optionally add `nav.csv` (columns `time_utc`, `lat`, `lon`, decimal degrees) to get a per-ping ship track, distance and speed. Add `stations.csv` (see below) with one row per survey. Without it the build still works, but positions are empty and a warning is logged.
 4. **Set the `[environment]` values** (temperature, salinity, pressure) from your CTD data. See the notes under *Known limitations*.
@@ -149,8 +164,6 @@ One row per survey. `station_id` is the start of the raw file name, up to the fi
 | `confidence`, `note` | Optional, carried into the database and shown on the map |
 
 **stations.csv is written automatically from GPS when it is missing.** If a cruise has no `stations.csv`, the build reads the GPS fixes recorded inside the raw files (NMEA `GGA` sentences in the navigation datagrams) and writes one row per station id: the median fix, a confidence from the fix quality (`good`, or `fair` for plain GPS or a moving ship), and a note with the fix count and spread. It never overwrites a file you made, and it logs a warning asking you to check the positions. If the ship moved more than 500 m during a survey, one position is a poor description, so the build also writes a time-based `nav.csv` (one fix per second, timed with the same clock as the pings, so a GPS clock offset does not matter) and the dashboard draws the track. If the files hold no usable GPS (the Baja file does not), positions stay empty and the build says so.
-
-**Positions from GPS in the raw files.** Some `.raw` files carry the ship's GPS as NMEA text (`$..GGA` sentences). `Tutorial_IntroToLiveViewing` does: its `stations.csv` row is the median of the 243 fixes found in the four files (all fix quality 4, the ship did not move: about 9 m spread in latitude, under 1 m in longitude), rated `good`. All four files share the station id `EK80_SimradEcho_WC381_Sequential`, so one row covers them. The GPS clock in those files reads about 5 minutes later than the file names, which matters only if you match ping times to GPS times. A moving survey needs a time-based `nav.csv` (`time_utc`, `lat`, `lon`) instead of one position per survey; the build writes one automatically (see above).
 
 The 20250416_Baja positions were read off the "Golfo de California 2025 - Echosounder surveys" map (a picture with no coordinates), so they are approximate (about +/- 3 km). Replace them with positions from the ship's navigation log when you have them.
 
@@ -204,9 +217,10 @@ A file that fails to process is logged and skipped; the rest of the cruise still
 
 ## Running the Dashboard
 
-    scripts\windows\echogram_dashboard.bat
+* **Windows:** `scripts\windows\echogram_dashboard.bat`
+* **Linux / macOS:** `./scripts/linux_mac/echogram_dashboard.sh` (run `chmod +x scripts/linux_mac/*.sh` once to make the scripts executable)
 
-or `python -m panel serve echogram_holoviews.py --port 5008 --show`. The dashboard runs on port 5008 (http://localhost:5008/echogram_holoviews), so it can run alongside the CTD dashboard (5006) and the flow-through dashboard (5007). Choose the cruise and the recording in the sidebar. The dashboard detects which frequencies the recording contains (38 and 200 kHz for the Baja file) and stacks one panel per frequency on a shared time axis. The *Map* tab shows every survey in `stations.csv` on an Esri Ocean Base map showing seafloor relief (needs internet), with the selected recording highlighted in red.
+Or run `python -m panel serve echogram_holoviews.py --port 5008 --show` from the project root with the virtual environment activated. The dashboard runs on port 5008 (http://localhost:5008/echogram_holoviews), so it can run alongside the CTD dashboard (5006) and the flow-through dashboard (5007). Choose the cruise and the recording in the sidebar. The dashboard detects which frequencies the recording contains (38 and 200 kHz for the Baja file) and stacks one panel per frequency on a shared time axis. The *Map* tab shows every survey in `stations.csv` on an Esri Ocean Base map showing seafloor relief (needs internet), with the selected recording highlighted in red.
 
 The Echogram tab has four views (the fourth, *Frequency difference (MVBS)*, is described below):
 

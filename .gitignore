@@ -26,7 +26,8 @@ processed/
 logs/
 
 # Raw instrument data is large; keep it out of git (GitHub rejects files over 100 MB)
-cruises/*/raw/
+cruises/*/raw/*
+!cruises/*/raw/.gitkeep
 *.raw
 *.idx
 *.bot
